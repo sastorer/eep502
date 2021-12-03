@@ -55,7 +55,7 @@ for letter_1, letter_2 in pairsLetters:
 def generate_consitution_words(n):
     wordList = []
     first_word = "word"
-    while first_word.islower() and first_word not in ['!', ',', '.', '?', ':', ';', '-', '(', ')', ' ']:
+    while first_word.islower() or first_word in ['!', ',', '.', '?', ':', ';', '-', '(', ')', ' ']:
         first_word = np.random.choice(listText)
     wordList.append(first_word)
 
@@ -72,7 +72,7 @@ def generate_consitution_words(n):
 def generate_constitution_letters(n):
     letterList = []
     first_letter = "w"
-    while first_letter.islower() and first_letter not in ['!', ',', '.', '?', ':', ';', '-', '(', ')', ' ']:
+    while first_letter.islower() or first_letter in ['!', ',', '.', '?', ':', ';', '-', '(', ')', ' ']:
             first_letter = np.random.choice(letterText)
     letterList.append(first_letter)
 
