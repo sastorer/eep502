@@ -1,24 +1,18 @@
 import numpy as np
 import pandas as pd
 import re
-
 import nltk
 nltk.download('words')
-
 from nltk.corpus import words
 
 def transition_matrix(transitions):
     df = pd.DataFrame(transitions)
-
     # create a new column with data shifted one space
     df['shift'] = df[0].shift(-1)
-
     # add a count column (for group by function)
     df['count'] = 1
-
     # groupby and then unstack, fill the zeros
     trans_mat = df.groupby([0, 'shift']).count().unstack().fillna(0)
-
     # normalise by occurences and save values to get transition matrix
     trans_mat = trans_mat.div(trans_mat.sum(axis=1), axis=0).values
     return trans_mat
@@ -61,10 +55,8 @@ for letter_1, letter_2 in pairsLetters:
 def generate_consitution_words(n):
     wordList = []
     first_word = "word"
-    while first_word.islower():
+    while first_word.islower() and first_word not in ['!', ',', '.', '?', ':', ';', '-', '(', ')', ' ']:
         first_word = np.random.choice(listText)
-        if first_word in ['!', ',', '.', '?', ':', ';', '-', '(', ')']:
-            first_word = np.random.choice(listText)
     wordList.append(first_word)
 
     for i in range(n):
@@ -80,9 +72,7 @@ def generate_consitution_words(n):
 def generate_constitution_letters(n):
     letterList = []
     first_letter = "w"
-    while first_letter.islower():
-        first_letter = np.random.choice(letterText)
-        if first_letter in ['!', ',', '.', '?', ':', ';', '-', '(', ')', ' ']:
+    while first_letter.islower() and first_letter not in ['!', ',', '.', '?', ':', ';', '-', '(', ')', ' ']:
             first_letter = np.random.choice(letterText)
     letterList.append(first_letter)
 
