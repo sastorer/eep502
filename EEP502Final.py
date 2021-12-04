@@ -23,10 +23,6 @@ def transition_matrix_3d(transitions):
     df['shift'] = df[0].shift(-1)
     # Add a count column (for group by function)
     df['count'] = 1
-    # Groupby and then unstack, fill the zeros
-    trans_mat2d = df.groupby([0, 'shift']).count().unstack().fillna(0)
-    # Normalise by occurences and save values to get transition matrix
-    trans_mat2d = trans_mat2d.div(trans_mat2d.sum(axis=1), axis=0).values
     # Create a new column with data shifted two spaces
     df['shift2'] = df[0].shift(-2)
     # Groupby and then unstack, fill the zeros
@@ -87,6 +83,7 @@ for letter_1, letter_2 in pairsLetters:
     else:
         letterDict[letter_1] = [letter_2]
 
+# Create letter pairs and then check the corpus to see if they actually exist
 letterPairs = []
 actualPairs = []
 for x in uniqueLetters:
@@ -96,18 +93,21 @@ for pair in letterPairs:
     if strText.count(pair) > 0:
         actualPairs.append(pair)
 
-def get_next_letter(word, sentence):
+# Helper function to find the letter after a given pair of letters throught the given corpus
+def get_next_letter(word, corpus):
     index = 0
     dataAfter = []
-    while index < len(sentence):
-        index = sentence.find(word, index)
+    while index < len(corpus):
+        index = corpus.find(word, index)
         if index == -1:
             break
-        if index < len(sentence)-2:
-            dataAfter.append(sentence[index+2])
+        if index < len(corpus)-2:
+            dataAfter.append(corpus[index+2])
         index += len(word)
     return dataAfter
 
+# Take the letter pairs and sort them into a dictionary where the key
+# is two letters and the values are all possible letters that can follow the pair
 pairsDict = {}
 for pair in actualPairs:
     if pair in pairsDict.keys():
@@ -118,6 +118,7 @@ for pair in actualPairs:
         for letter in get_next_letter(pair, ''.join(letterText)):
             pairsDict[pair].append(letter)
 
+# Create the transition probability matrix
 doubleLetterTransition = transition_matrix_3d(letterText)
 
 def generate_consitution_words(n):
@@ -201,7 +202,7 @@ def generate_constitution_letters_double(n):
                 count = count - 1
         else:
             # If we made a bad choice and that pair isn't in our dictionary, remove the last guess and try again
-            letterList = letterList[:-1]
+            letterList = letterList[:-2]
 
     # Print and return the final list of generated letters in string form with nothing between them
     print(''.join(letterList))
