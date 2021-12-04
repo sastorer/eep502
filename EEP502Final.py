@@ -17,6 +17,24 @@ def transition_matrix(transitions):
     trans_mat = trans_mat.div(trans_mat.sum(axis=1), axis=0).values
     return trans_mat
 
+def transition_matrix_3d(transitions):
+    df = pd.DataFrame(transitions)
+    # Create a new column with data shifted one space
+    df['shift'] = df[0].shift(-1)
+    # Add a count column (for group by function)
+    df['count'] = 1
+    # Groupby and then unstack, fill the zeros
+    trans_mat2d = df.groupby([0, 'shift']).count().unstack().fillna(0)
+    # Normalise by occurences and save values to get transition matrix
+    trans_mat2d = trans_mat2d.div(trans_mat2d.sum(axis=1), axis=0).values
+    # Create a new column with data shifted two spaces
+    df['shift2'] = df[0].shift(-2)
+    # Groupby and then unstack, fill the zeros
+    trans_mat3d = df.groupby([0, 'shift', 'shift2']).count().unstack().fillna(0)
+    # Normalise by occurences and save values to get transition matrix
+    trans_mat3d = trans_mat3d.div(trans_mat3d.sum(axis=1), axis=0)
+    return trans_mat3d
+
 def make_pairs(data):
     for i in range(len(data)-1):
         yield (data[i], data[i+1])
@@ -68,6 +86,39 @@ for letter_1, letter_2 in pairsLetters:
         letterDict[letter_1].append(letter_2)
     else:
         letterDict[letter_1] = [letter_2]
+
+letterPairs = []
+actualPairs = []
+for x in uniqueLetters:
+    for y in uniqueLetters:
+        letterPairs.append(x+y)
+for pair in letterPairs:
+    if strText.count(pair) > 0:
+        actualPairs.append(pair)
+
+def get_next_letter(word, sentence):
+    index = 0
+    dataAfter = []
+    while index < len(sentence):
+        index = sentence.find(word, index)
+        if index == -1:
+            break
+        if index < len(sentence)-2:
+            dataAfter.append(sentence[index+2])
+        index += len(word)
+    return dataAfter
+
+pairsDict = {}
+for pair in actualPairs:
+    if pair in pairsDict.keys():
+        for letter in get_next_letter(pair, ''.join(letterText)):
+            pairsDict[pair].append(letter)
+    else:
+        pairsDict[pair] = []
+        for letter in get_next_letter(pair, ''.join(letterText)):
+            pairsDict[pair].append(letter)
+
+doubleLetterTransition = transition_matrix_3d(letterText)
 
 def generate_consitution_words(n):
     wordList = []
@@ -125,7 +176,39 @@ def generate_constitution_letters(n):
     print(''.join(letterList))
     return ''.join(letterList)
 
+def generate_constitution_letters_double(n):
+    # Start with a pair of letters that we know is in the corpus
+    letterList = ['W','e']
+    count = n
+    while count != 0:
+        # Build a list of probabilities to feed to np.random.choice 
+        # (it needs to be the same length as the letters to choose from)
+        probabilities = []
+        # Get the unique letters that can follow the last pair of letters in letter list 
+        # (want to make sure all of the probabilities add up to 1)
+        pair = letterList[-2]+letterList[-1]
+        if pair in pairsDict.keys():
+            uniqueLetterDict = np.unique(pairsDict[pair])
+            # For each entry in that unique list of letters, append the corresponding probability 
+            # from the transition matrix to the list of probabilities
+            for entry in uniqueLetterDict:
+                if np.where(uniqueLetters == entry)[0].size != 0:
+                    probabilities.append(doubleLetterTransition.loc[(letterList[-2], letterList[-1])][(np.where(uniqueLetters == entry)[0][0])])
+            # Finally, choose a word given all of the parameters!
+            letterList.append(np.random.choice(uniqueLetterDict, p=probabilities))
+            # If that choice is a space, consider the preceeding choices a word and deduct from the word count
+            if letterList[-1] == ' ':
+                count = count - 1
+        else:
+            # If we made a bad choice and that pair isn't in our dictionary, remove the last guess and try again
+            letterList = letterList[:-1]
+
+    # Print and return the final list of generated letters in string form with nothing between them
+    print(''.join(letterList))
+    return ''.join(letterList)
+
 letterstr = generate_constitution_letters(100)
+
 # Check how many words are in the generated string of letters
 setofwords = set(words.words())
 wordCount = 0
@@ -134,5 +217,16 @@ for word in letterstr.split():
         if len(word) != 1:
             wordCount = wordCount + 1
 print("There are {} words here.".format(wordCount))
+print('\n')
+
+doubleletterstr = generate_constitution_letters_double(100)
+
+# Check how many words are in the generated string of letters
+wordCountDouble = 0
+for word in doubleletterstr.split():    
+    if word in setofwords:
+        if len(word) != 1:
+            wordCountDouble = wordCountDouble + 1
+print("There are {} words here.".format(wordCountDouble))
 print('\n')
 generate_consitution_words(500)
